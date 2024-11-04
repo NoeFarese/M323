@@ -7,8 +7,8 @@
   (lambda (nummer)
     (cond
       ((= nummer 1) "Torwärtin")
-      ((or (= nummer 2) (= nummer 3) (= nummer 4) (= nummer 5)) "Abwehrspielerin")
-      ((or (= nummer 6) (= nummer 7) (= nummer 8) (= nummer 10)) "Mittelfeldspielerin")
+      ((<= nummer 5) "Abwehrspielerin")
+      ((or (<= nummer 8) (= nummer 10)) "Mittelfeldspielerin")
       ((or (= nummer 9) (= nummer 11)) "Stürmerin")
       ((and (>= nummer 12) (<= nummer 99)) "Ersatzspielerin")
       (else "Ungültige Nummer"))))
