@@ -1,6 +1,6 @@
 ;; Die ersten drei Zeilen dieser Datei wurden von DrRacket eingefügt. Sie enthalten Metadaten
 ;; über die Sprachebene dieser Datei in einer Form, die DrRacket verarbeiten kann.
-#reader(lib "beginner-reader.rkt" "deinprogramm" "sdp")((modname Fold) (read-case-sensitive #f) (teachpacks ((lib "image.rkt" "teachpack" "deinprogramm" "sdp"))) (deinprogramm-settings #(#f write repeating-decimal #f #t none explicit #f ((lib "image.rkt" "teachpack" "deinprogramm" "sdp")))))
+#reader(lib "beginner-reader.rkt" "deinprogramm" "sdp")((modname fold_aufgaben_loesungen) (read-case-sensitive #f) (teachpacks ((lib "image.rkt" "teachpack" "deinprogramm" "sdp"))) (deinprogramm-settings #(#f write repeating-decimal #f #t none explicit #f ((lib "image.rkt" "teachpack" "deinprogramm" "sdp")))))
 ; ----- Funktionen auf Listen -----
 
 (define list-of-number (signature (list-of number)))
@@ -53,34 +53,6 @@
 ; Liste einfalten
 (: list-fold (%b (%a %b -> %b) (list-of %a) -> %b))
 
-; Grundsätzlicher Aufbau der Signatur (Eine Funktion mit 3 Eingaben):
-; (: list-fold (... ... ... -> ...))
-
-; Die dritte Eingabe ist eine Liste:
-; (: list-fold (... ... (list-of ...) -> ...))
-
-; for-cons ist eine zweistellige Funktion:
-; (: list-fold (... (... ... -> ...) (list-of ...) -> ...))
-
-; Die Listenelemente können beliebig sein:
-; (: list-fold (... (... ... -> ...) (list-of %a) -> ...))
-
-; for-cons nimmt Elemente der Liste entgegen:
-; (: list-fold (... (%a ... -> ...) (list-of %a) -> ...))
-
-; Der Gesamtergebnistyp ist noch offen:
-; (: list-fold (... (%a ... -> ...) (list-of %a) -> %b))
-
-; Beim rekursiven Aufruf sehen wir, dass das Gesamtergebnis %b in die zweite Stelle der Funktion for-cons hineingeht:
-; (: list-fold (... (%a %b -> ...) (list-of %a) -> %b))
-
-; Das Ergebnis von for-cons muss das gleiche sein wie das Gesamtergebnis:
-; (: list-fold (... (%a %b -> %b) (list-of %a) -> %b))
-
-; Die leere Liste muss der gleiche Datentyp sein, wie das Gesamtergebnis:
-; (: list-fold (%b (%a %b -> %b) (list-of %a) -> %b))
-; In der als Parameter übergebenen Funktion wird ein Listenelement mit dem Gesamtergebnis verrechnet und damit zum neuen Gesamtergebnis.
-
 (check-expect (list-fold 0 + (list 1 2 3 4 5)) 15)
 (check-expect (list-fold 1 * (list 1 2 3 4 5)) 120)
 
@@ -92,13 +64,6 @@
        (for-cons (first list) ; Die * oder + sind im cons-Zweig, daher for-cons!
                  (list-fold for-empty for-cons (rest list))))))) ; Ebenso gehören Sie in den rekursiven Aufruf.
 
-
-; list-fold entspricht der Schablone:
-; Für eine Liste braucht es ein "cond", "(empty? list)", "(cons? list)", "first list)" und der rekursive Aufruf.
-; Was passiert mit der leeren Liste? Das ist von Funktion zu Funktion unterschiedlich. --> for-empty
-; Die zweite Sache, die unterschiedlich ist was mit dem ersten Element gemacht wird, sowie wie mithilfe des rekursiven Aufrufs der restlichen Elemente das Gesamterggebnis gebildet wird. --> for-cons
-; list-fold ist die Manifestation des Patterns für Listenfunktionen.
-; Probieren Sie folgendes aus: (list-fold empty cons (list 1 2 3 4 5 6)) --> Identität (Also list.fold entspricht den Rückrad der Liste)
 
 ; ----- Aufgaben -----
 
@@ -138,3 +103,85 @@
 
 (check-expect (list-map2 inc (list 1 2 3 4 5)) (list 2 3 4 5 6))
 
+; Aufgabe 2:
+; Abstrahieren Sie list-filter mithilfe von list-fold.
+; Erstellen Sie also die Listenfunktion list-filter2, indem Sie dazu list-fold verwenden.
+
+; Listenelemente herausfiltern, die ein Kriterium erfüllen
+(: list-filter2 ((%a -> boolean) (list-of %a) -> (list-of %a)))
+
+(define list-filter2
+  (lambda (p? list)
+    (list-fold empty
+               (lambda (first-list rec)
+                 (if (p? first-list)
+                     (cons first-list rec)
+                     rec))
+               list)))
+
+; Probieren wir es aus:
+
+(check-expect (list-filter2 even? (list 1 2 3 4 5 6 7 8 9)) (list 2 4 6 8))
+
+; Aufgabe 3:
+; Abstrahieren Sie list-length mithilfe von list-fold.
+; Erstellen Sie also die Listenfunktion list-length2, indem Sie dazu list-fold verwenden.
+; Hinweis: Für das for-cons Argument von list-fold wird eine Hilfsfunktion benötigt, die ihr erstes Argument (first list) ignoriert (es spielt ja für die Listenlänge keine Rolle).
+
+; Hilfsfunktion: add-1-for-length
+(: add-1-for-length ( %a natural -> natural))
+
+(check-expect (add-1-for-length 2 5) 6)
+(check-expect (add-1-for-length "Test" 3) 4)
+
+(define add-1-for-length
+  (lambda (ignore n)
+    (+ n 1)))
+
+; Länge einer Liste berechnen
+(: list-length2 ((list-of %a) -> natural))
+
+(check-expect (list-length2 (list 1 2 3 4 5 6 8)) 7)
+(check-expect (list-length2 (list "a" "b" "c" "d")) 4)
+
+(define list-length2
+  (lambda (list)
+    (list-fold 0 add-1-for-length list)))
+
+; Aufgabe 4:
+; Schreibe eine Funktion list-or, die eine Funktion auf alle Elemente einer Liste anwendet, die jeweils ein Boolean liefert, und die Resultate mit or verknüpft.
+; Benutzen Sie dazu list-fold!
+
+; Prädikat p auf alle Elemente einer Liste anwenden und mit or verknüpfen
+(: list-or ((%a -> boolean) (list-of %a) -> boolean))
+
+; Testfälle
+(check-expect (list-or even? (list 1 2 3 4))  #t)
+(check-expect (list-or (lambda (n) (< n 5)) (list 7 8 9 10))  #f)
+
+(define list-or
+  (lambda (p? list)
+    (list-fold #f
+               (lambda (first-list rec)
+                 (or (p? first-list) rec))
+               list)))
+
+; Aufgabe 5:
+; Schreibe eine Funktion count-trues, die ein Funktion mit boolescher Rückgabe auf alle Elemente einer Liste anwendet und zählt, wie häufig #t zurückgegeben wird.
+; Benutzen Sie dazu list-fold!
+
+; Prädikat p auf alle Elemente einer Liste anwenden und #t zählen
+(: count-predicate ((%a -> boolean) (list-of %a) -> number))
+
+; Testfälle:
+(check-expect (count-predicate even? (list 1 2 3 4))  2)
+(check-expect (count-predicate (lambda (n) (< n 5)) (list 7 8 9 10))  0)
+
+(define count-predicate
+  (lambda (p? list)
+    (list-fold 0
+               (lambda (first-list rec)
+                 (if (p? first-list)
+                     (+ 1 rec)
+                     rec))
+               list)))
